@@ -5,33 +5,42 @@
 package redis
 
 import (
+	"context"
 	"log"
 	"os"
+	"sync"
 
-	"github.com/mediocregopher/radix/v3"
+	"github.com/mediocregopher/radix/v4"
 )
 
 var connString = os.Getenv("RDS_STRING")
 
-var mainPool *radix.Pool
+var mainClient *radix.Client
+var mu sync.Mutex
 
 // Connect proporciona la funcionalidad necesaria para establecer una conexión
 // en chinga y que administre el pool y esas cosas
-func Connect() (pool *radix.Pool) {
+func Connect() radix.Client {
 
-	if mainPool == nil {
-
-		log.Println("*** Creando nuevo pool de Redis ***")
-		pool, err := radix.NewPool("tcp", connString, poolSize())
-		if err != nil {
-
-			log.Println("****** No se pudo establecer conexión con redis ******")
-			log.Println(err.Error())
-			log.Println("****** No se pudo establecer conexión con redis ******")
-			return nil
-		}
-		mainPool = pool
-		go setConnectionName()
+	mu.Lock()
+	defer mu.Unlock()
+	if mainClient != nil {
+		return *mainClient
 	}
-	return mainPool
+
+	config := radix.PoolConfig{
+		Size: poolSize(),
+	}
+	log.Println("*** Creando nuevo pool de Redis ***")
+	client, err := config.New(context.Background(), "tcp", connString)
+	if err != nil {
+
+		log.Println("****** No se pudo establecer conexión con redis ******")
+		log.Println(err.Error())
+		log.Println("****** No se pudo establecer conexión con redis ******")
+		return nil
+	}
+	mainClient = &client
+	go setConnectionName()
+	return *mainClient
 }
