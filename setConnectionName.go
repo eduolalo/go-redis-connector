@@ -1,18 +1,28 @@
 package redis
 
 import (
+	"context"
 	"log"
 	"os"
 
-	"github.com/mediocregopher/radix/v3"
+	"github.com/mediocregopher/radix/v4"
 )
 
 // setConnectionName es para signar nombre a la conexión de Redis
 func setConnectionName() {
 
-	name := os.Getenv("RDS_NAME")
+	if mainClient == nil {
+		return
+	}
+	client := *mainClient
+	name, ok := os.LookupEnv("RDS_NAME")
+	if !ok {
+		if hostName, err := os.Hostname(); err == nil {
+			name = hostName
+		}
+	}
 	var resp string
-	err := mainPool.Do(radix.Cmd(&resp, "CLIENT", "SETNAME", name))
+	err := client.Do(context.Background(), radix.Cmd(&resp, "CLIENT", "SETNAME", name))
 
 	if err != nil {
 
@@ -23,5 +33,4 @@ func setConnectionName() {
 	}
 
 	log.Println("****** Redis client name: ", name, " ******")
-	log.Printf(resp)
 }
