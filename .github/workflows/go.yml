@@ -3,7 +3,7 @@ name: Go-Linter
 on:
   pull_request:
     branches:
-     - main
+     - v2
 permissions:
   contents: read
   pull-requests: read
