@@ -49,4 +49,5 @@ jobs:
     - name: Run tests
       env:
         RDS_STRING: ${{ secrets.RDS_STRING }}
-      run: go test ./...
+      
+      run: echo $RDS_STRING && go test ./...
