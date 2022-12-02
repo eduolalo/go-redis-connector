@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 	"testing"
-
-	"github.com/mediocregopher/radix/v4"
 )
 
 func TestConnect(t *testing.T) {
@@ -22,21 +20,38 @@ func TestConnect(t *testing.T) {
 			return
 		}
 
-		t.Run("Connect", func(t *testing.T) {
+		t.Run("Echo", func(t *testing.T) {
 			pool := Connect()
-			defer pool.Close()
-
-			var str, val string
-			val = "jaló esta merga"
 			ctx := context.Background()
-			if err := pool.Do(ctx, radix.Cmd(&str, "ECHO", val)); err != nil {
-				t.Errorf("Error al ejecutar el comando, %+v", err)
-				return
-			}
-			if str != val {
+
+			var val string
+			val = "jaló esta merga"
+			if str, err := pool.Echo(ctx, val).Result(); err != nil {
+
+				t.Fatal(err)
+			} else if str != val {
+
 				t.Errorf("el valor ejecutado %s es diferente al recibido %s", val, str)
 			}
 		})
-	})
 
+		t.Run("Connection Name", func(t *testing.T) {
+			pool := Connect()
+			ctx := context.Background()
+
+			name, ok := os.LookupEnv("RDS_NAME")
+			if !ok {
+				if hostName, err := os.Hostname(); err == nil {
+					name = hostName
+				}
+			}
+			conn := pool.Conn(ctx)
+			if nm, err := conn.ClientGetName(ctx).Result(); err != nil {
+				t.Fatal(err)
+			} else if nm != name {
+
+				t.Errorf("Name spected: %s, name received %s", name, nm)
+			}
+		})
+	})
 }

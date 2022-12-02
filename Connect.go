@@ -10,37 +10,44 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mediocregopher/radix/v4"
+	"github.com/go-redis/redis/v8"
 )
 
-var connString = os.Getenv("RDS_STRING")
-
-var mainClient *radix.Client
+var connString string
+var mainClient *redis.Client
 var mu sync.Mutex
 
 // Connect proporciona la funcionalidad necesaria para establecer una conexión
 // en chinga y que administre el pool y esas cosas
-func Connect() radix.Client {
+func Connect() *redis.Client {
 
 	mu.Lock()
 	defer mu.Unlock()
 	if mainClient != nil {
-		return *mainClient
+		log.Println("already connected")
+		return mainClient
 	}
-
-	config := radix.PoolConfig{
-		Size: poolSize(),
+	log.Println("Conectado")
+	connString, ok := os.LookupEnv("RDS_STRING")
+	if !ok {
+		log.Panic("Could not find RDS_STRING environment variable")
 	}
-	log.Println("*** Creando nuevo pool de Redis ***")
-	client, err := config.New(context.Background(), "tcp", connString)
+	if connString == "" {
+		log.Panic(`RDS_STRING environment variable cannot be empty`)
+	}
+	opt, err := redis.ParseURL(connString)
 	if err != nil {
-
-		log.Println("****** No se pudo establecer conexión con redis ******")
-		log.Println(err.Error())
-		log.Println("****** No se pudo establecer conexión con redis ******")
-		return nil
+		log.Panicf("Error on parsing connection string %+v", err)
 	}
-	mainClient = &client
-	go setConnectionName()
-	return *mainClient
+
+	opt.PoolSize = poolSize()
+	client := redis.NewClient(opt)
+
+	if _, err := client.Ping(context.Background()).Result(); err != nil {
+		log.Panicf("Error on ping database, %+v", err)
+	}
+
+	mainClient = client
+	setConnectionName()
+	return mainClient
 }
