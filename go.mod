@@ -1,4 +1,4 @@
-module github.com/kalmecak/go-redis-connector/v2
+module github.com/kalmecak/go-redis-connector/v3
 
 go 1.18
 
