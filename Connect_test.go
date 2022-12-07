@@ -24,8 +24,7 @@ func TestConnect(t *testing.T) {
 			pool := Connect()
 			ctx := context.Background()
 
-			var val string
-			val = "jaló esta merga"
+			var val string = "jaló esta merga"
 			if str, err := pool.Echo(ctx, val).Result(); err != nil {
 
 				t.Fatal(err)

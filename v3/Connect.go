@@ -24,10 +24,10 @@ func Connect() *redis.Client {
 	mu.Lock()
 	defer mu.Unlock()
 	if mainClient != nil {
-		log.Println("already connected")
+
 		return mainClient
 	}
-	log.Println("Conectado")
+
 	connString, ok := os.LookupEnv("RDS_STRING")
 	if !ok {
 		log.Panic("Could not find RDS_STRING environment variable")
